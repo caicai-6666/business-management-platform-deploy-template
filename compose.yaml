@@ -1,0 +1,46 @@
+name: business-platform-template
+services:
+  check:
+    image: python:3.12-slim
+    profiles: [check]
+    volumes:
+      - ${BACKEND_DIR:-./business-management-platform-be-template}:/template:ro
+    command: ["python", "-B", "/template/tools/check_search.py"]
+  mysql:
+    profiles: [mysql]
+    image: ${MYSQL_IMAGE:-mysql:8.4}
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-platform}
+      MYSQL_USER: ${MYSQL_USER:-platform}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+    volumes:
+      - ./mysql/platform.cnf:/etc/mysql/conf.d/platform.cnf:ro
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql -h127.0.0.1 -u\"$$MYSQL_USER\" \"$$MYSQL_DATABASE\" -Nse 'SELECT 1'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  backend:
+    profiles: [app]
+    image: ${BACKEND_IMAGE:-business-platform-derived:local}
+    pull_policy: never
+    environment:
+      DATA_DIR: /var/lib/platform
+      SQLITE_FILENAME: ${SQLITE_FILENAME:-platform.sqlite3}
+      VECTOR_ENABLED: "${VECTOR_ENABLED:-false}"
+      VECTOR_INDEX_FILENAME: ${VECTOR_INDEX_FILENAME:-vectors.sqlite3}
+      DB_ENGINE: ${DB_ENGINE:-sqlite}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-platform}
+      MYSQL_USER: ${MYSQL_USER:-platform}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+    volumes:
+      - backend-data:/var/lib/platform
+    ports:
+      - "127.0.0.1:${BACKEND_BIND_PORT:-8080}:8000"
+volumes:
+  mysql-data:
+  backend-data:
