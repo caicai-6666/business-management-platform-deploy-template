@@ -4,3 +4,4 @@ collation-server=utf8mb4_0900_ai_ci
 default-time-zone='+00:00'
 # 中文全文检索使用双字切分；调整后需重建已有 FULLTEXT 索引。
 ngram_token_size=2
+loose-myvector-index-dir=/var/lib/mysql

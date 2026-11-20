@@ -1,14 +1,16 @@
 name: business-platform-template
 services:
   check:
-    image: python:3.12-slim
+    build: ${BACKEND_DIR:-./business-management-platform-be-template}
     profiles: [check]
     volumes:
       - ${BACKEND_DIR:-./business-management-platform-be-template}:/template:ro
-    command: ["python", "-B", "/template/tools/check_search.py"]
+    tmpfs:
+      - /template/tests/tmp
+    command: ["python", "-B", "tests/check_search.py"]
   mysql:
     profiles: [mysql]
-    image: ${MYSQL_IMAGE:-mysql:8.4}
+    build: ./mysql
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-platform}
       MYSQL_USER: ${MYSQL_USER:-platform}
@@ -18,20 +20,47 @@ services:
       - ./mysql/platform.cnf:/etc/mysql/conf.d/platform.cnf:ro
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql -h127.0.0.1 -u\"$$MYSQL_USER\" \"$$MYSQL_DATABASE\" -Nse 'SELECT 1'"]
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$$MYSQL_PASSWORD" mysql --protocol=TCP -h127.0.0.1 -u"$$MYSQL_USER"
+          "$$MYSQL_DATABASE" -Nse "SELECT myvector_construct('[1,0]')" >/dev/null
       interval: 5s
       timeout: 3s
       retries: 30
+  mysql-client:
+    profiles: [mysql]
+    build: ${BACKEND_DIR:-./business-management-platform-be-template}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-platform}
+      MYSQL_USER: ${MYSQL_USER:-platform}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+    volumes:
+      - ${BACKEND_DIR:-./business-management-platform-be-template}:/template
+    command: ["python", "-m", "app.database", "check-mysql"]
   backend:
     profiles: [app]
     image: ${BACKEND_IMAGE:-business-platform-derived:local}
     pull_policy: never
     environment:
+      DINGTALK_CORP_ID: "${DINGTALK_CORP_ID:-}"
+      DINGTALK_APP_KEY: "${DINGTALK_APP_KEY:-}"
+      DINGTALK_APP_SECRET: "${DINGTALK_APP_SECRET:-}"
+      DINGTALK_PROXY_URL: "${DINGTALK_PROXY_URL:-}"
+      DINGTALK_TIMEOUT_SECONDS: "${DINGTALK_TIMEOUT_SECONDS:-30}"
+      MIDDLEWARE_BASE_URL: "${MIDDLEWARE_BASE_URL:-}"
+      MIDDLEWARE_PLATFORM_CODE: "${MIDDLEWARE_PLATFORM_CODE:-}"
+      MIDDLEWARE_SECRET: "${MIDDLEWARE_SECRET:-}"
+      MIDDLEWARE_REQUEST_TIMEOUT_SECONDS: "${MIDDLEWARE_REQUEST_TIMEOUT_SECONDS:-30}"
+      MIDDLEWARE_RETRY_INTERVAL_SECONDS: "${MIDDLEWARE_RETRY_INTERVAL_SECONDS:-30}"
       DATA_DIR: /var/lib/platform
       SQLITE_FILENAME: ${SQLITE_FILENAME:-platform.sqlite3}
-      VECTOR_ENABLED: "${VECTOR_ENABLED:-false}"
       VECTOR_INDEX_FILENAME: ${VECTOR_INDEX_FILENAME:-vectors.sqlite3}
-      DB_ENGINE: ${DB_ENGINE:-sqlite}
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
       MYSQL_DATABASE: ${MYSQL_DATABASE:-platform}

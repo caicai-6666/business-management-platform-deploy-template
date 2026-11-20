@@ -1,0 +1,7 @@
+bindAddr = "{{ .Envs.FRP_BIND_ADDR }}"
+bindPort = 7000
+auth.method = "token"
+auth.token = "{{ .Envs.FRP_TOKEN }}"
+transport.tls.force = true
+transport.tls.certFile = "{{ .Envs.FRP_TLS_CERT }}"
+transport.tls.keyFile = "{{ .Envs.FRP_TLS_KEY }}"

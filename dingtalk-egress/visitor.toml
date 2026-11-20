@@ -1,0 +1,15 @@
+serverAddr = "{{ .Envs.FRP_SERVER_ADDR }}"
+serverPort = {{ if .Envs.FRP_CONTROL_PORT }}{{ .Envs.FRP_CONTROL_PORT }}{{ else }}7000{{ end }}
+auth.method = "token"
+auth.token = "{{ .Envs.FRP_TOKEN }}"
+transport.tls.enable = true
+transport.tls.trustedCaFile = "{{ .Envs.FRP_CA }}"
+transport.tls.serverName = "{{ .Envs.FRP_SERVER_NAME }}"
+
+[[visitors]]
+name = "dingtalk-app-visitor"
+type = "stcp"
+serverName = "dingtalk-app-egress"
+secretKey = "{{ .Envs.FRP_STCP_KEY }}"
+bindAddr = "127.0.0.1"
+bindPort = 22888

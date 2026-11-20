@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!platform.cnf
+!init/
+!init/000-myvector-config.sh
+!init/020-myvector-access.sh

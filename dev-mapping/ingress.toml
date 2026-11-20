@@ -1,0 +1,14 @@
+serverAddr = "{{ .Envs.FRP_SERVER_ADDR }}"
+serverPort = {{ .Envs.FRP_CONTROL_PORT }}
+auth.method = "token"
+auth.token = "{{ .Envs.FRP_TOKEN }}"
+transport.tls.enable = true
+transport.tls.trustedCaFile = "{{ .Envs.FRP_CA }}"
+transport.tls.serverName = "{{ .Envs.FRP_SERVER_NAME }}"
+
+[[proxies]]
+name = "{{ .Envs.FRP_INGRESS_NAME }}"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = {{ .Envs.FRP_APP_PORT }}
+remotePort = {{ .Envs.FRP_UPSTREAM_PORT }}
